@@ -32,7 +32,7 @@ build/
 ### VS Code ###
 .vscode/
 /.mvn/wrapper/maven-wrapper.properties
-/src/main/resources/application.properties
+/src/main/resources/application.yml
 /.gitattributes
 /.gitignore
 /mvnw

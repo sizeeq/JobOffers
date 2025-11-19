@@ -1,9 +1,19 @@
 package pl.joboffers.feature;
 
+import com.github.tomakehurst.wiremock.client.WireMock;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import pl.joboffers.BaseIntegrationTest;
+import pl.joboffers.JobOffers.domain.offer.OfferFetcher;
+import pl.joboffers.JobOffers.domain.offer.dto.OfferDto;
+
+import java.util.List;
 
 public class HappyPathScenarioTest extends BaseIntegrationTest {
+
+    @Autowired
+    OfferFetcher offerFetcher;
 
     @Test
     public void f() {
@@ -15,6 +25,21 @@ public class HappyPathScenarioTest extends BaseIntegrationTest {
 
         // step 1: Scheduler runs for the first time and fetches offers → 0 offers
         // System adds 0 offers to the database
+        //given
+        wireMockServer.stubFor(WireMock.get("/offers")
+                .willReturn(WireMock.aResponse()
+                        .withStatus(HttpStatus.OK.value())
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("""
+                                []
+                                """.trim()
+                        )
+                )
+        );
+
+        //when
+        List<OfferDto> offerDtos = offerFetcher.fetchOffers();
+
 
         // step 2: User attempts to obtain a token via POST /token (username=someUser, password=somePassword)
         // System returns 401 UNAUTHORIZED
