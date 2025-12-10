@@ -1,9 +1,23 @@
 package pl.joboffers.feature;
 
+import com.github.tomakehurst.wiremock.client.WireMock;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import pl.joboffers.BaseIntegrationTest;
+import pl.joboffers.JobOffers.domain.offer.OfferFacade;
+import pl.joboffers.JobOffers.domain.offer.dto.OfferDto;
+
+import java.time.Duration;
+import java.util.List;
+
+import static org.awaitility.Awaitility.await;
+import static pl.joboffers.OfferResponseStubJson.bodyWithZeroOffers;
 
 public class HappyPathScenarioTest extends BaseIntegrationTest {
+
+    @Autowired
+    OfferFacade offerFacade;
 
     @Test
     public void f() {
@@ -12,9 +26,23 @@ public class HappyPathScenarioTest extends BaseIntegrationTest {
         // - Database: no offers
         // - External server: no offers
         // - No registered users
+        wireMockServer.stubFor(WireMock.get("/offers")
+                .willReturn(WireMock.aResponse()
+                        .withStatus(HttpStatus.OK.value())
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(bodyWithZeroOffers())
+                )
+        );
 
         // step 1: Scheduler runs for the first time and fetches offers → 0 offers
         // System adds 0 offers to the database
+        //given && when
+        await().atMost(Duration.ofSeconds(20))
+                .until(() -> {
+                    List<OfferDto> offerDtos = offerFacade.fetchAndSaveNewOffers();
+                    return offerDtos.isEmpty();
+                });
+
 
         // step 2: User attempts to obtain a token via POST /token (username=someUser, password=somePassword)
         // System returns 401 UNAUTHORIZED
