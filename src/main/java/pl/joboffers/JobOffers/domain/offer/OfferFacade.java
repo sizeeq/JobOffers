@@ -1,10 +1,12 @@
 package pl.joboffers.JobOffers.domain.offer;
 
+import org.springframework.stereotype.Component;
 import pl.joboffers.JobOffers.domain.offer.dto.OfferDto;
 import pl.joboffers.JobOffers.domain.offer.dto.OfferRequestDto;
 
 import java.util.List;
 
+@Component
 public class OfferFacade {
 
     private final OfferService offerService;

@@ -1,0 +1,5 @@
+offers:
+  http:
+    client:
+      config:
+        fixedDelay: PT1s
