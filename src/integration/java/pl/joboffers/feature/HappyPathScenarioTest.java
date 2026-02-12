@@ -1,9 +1,13 @@
 package pl.joboffers.feature;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.ResultActions;
 import pl.joboffers.BaseIntegrationTest;
 import pl.joboffers.JobOffers.domain.offer.OfferFacade;
 import pl.joboffers.JobOffers.domain.offer.dto.OfferDto;
@@ -11,7 +15,11 @@ import pl.joboffers.JobOffers.domain.offer.dto.OfferDto;
 import java.time.Duration;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static pl.joboffers.OfferResponseStubJson.bodyWithZeroOffers;
 
 public class HappyPathScenarioTest extends BaseIntegrationTest {
@@ -20,12 +28,13 @@ public class HappyPathScenarioTest extends BaseIntegrationTest {
     OfferFacade offerFacade;
 
     @Test
-    public void f() {
+    public void f() throws Exception {
 
         // Initial state:
         // - Database: no offers
         // - External server: no offers
         // - No registered users
+        // given & when & then
         wireMockServer.stubFor(WireMock.get("/offers")
                 .willReturn(WireMock.aResponse()
                         .withStatus(HttpStatus.OK.value())
@@ -36,7 +45,7 @@ public class HappyPathScenarioTest extends BaseIntegrationTest {
 
         // step 1: Scheduler runs for the first time and fetches offers → 0 offers
         // System adds 0 offers to the database
-        //given && when
+        //given && when && then
         await().atMost(Duration.ofSeconds(20))
                 .until(() -> {
                     List<OfferDto> offerDtos = offerFacade.fetchAndSaveNewOffers();
@@ -59,6 +68,20 @@ public class HappyPathScenarioTest extends BaseIntegrationTest {
         // step 6: User calls GET /offers with JWT
         // System returns 200 OK with an empty list (0 offers)
 
+        //given
+        String path = "/offers";
+
+        //when
+        ResultActions performResult = mockMvc.perform(get(path)
+                .contentType(MediaType.APPLICATION_JSON));
+
+        //then
+        MvcResult mvcResult = performResult.andExpect(status().isOk()).andReturn();
+        String json = mvcResult.getResponse().getContentAsString();
+        List<OfferDto> offerDtos = objectMapper.readValue(json, new TypeReference<>() {
+        });
+        assertThat(offerDtos).isEmpty();
+
         // step 7: Two new offers appear on the external server
 
         // step 8: Scheduler runs again and fetches 2 offers
@@ -68,7 +91,23 @@ public class HappyPathScenarioTest extends BaseIntegrationTest {
         // System returns 200 OK with offers 1000, 2000
 
         // step 10: User calls GET /offers/9999
-        // System returns 404 NOT_FOUND (Offer with id 9999 not found)
+        // System returns 404 NOT_FOUND (Offer with id 9999 was not found)
+
+        //given
+        String notExistingId = "9999";
+
+        //when
+        ResultActions performGetNotExistingId = mockMvc.perform(get("/offers/" + notExistingId));
+
+        //then
+        performGetNotExistingId.andExpect(status().isNotFound())
+                .andExpect(content().json(
+                        """
+                                {
+                                "message": "Offer with id: notExistingId was not found",
+                                "status": "NOT_FOUND"
+                                }
+                                """.trim()));
 
         // step 11: User calls GET /offers/1000
         // System returns 200 OK with details of offer 1000
