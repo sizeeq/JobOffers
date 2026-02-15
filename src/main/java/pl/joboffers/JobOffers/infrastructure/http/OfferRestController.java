@@ -1,12 +1,11 @@
 package pl.joboffers.JobOffers.infrastructure.http;
 
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import pl.joboffers.JobOffers.domain.offer.OfferFacade;
 import pl.joboffers.JobOffers.domain.offer.dto.OfferDto;
+import pl.joboffers.JobOffers.domain.offer.dto.OfferRequestDto;
 
 import java.util.List;
 
@@ -30,5 +29,11 @@ public class OfferRestController {
     public ResponseEntity<OfferDto> fetchOfferById(@PathVariable String id) {
         OfferDto offerById = offerFacade.findById(id);
         return ResponseEntity.ok(offerById);
+    }
+
+    @PostMapping
+    public ResponseEntity<OfferDto> saveOffer(@RequestBody @Valid OfferRequestDto offerRequestDto) {
+        OfferDto offerDto = offerFacade.save(offerRequestDto);
+        return ResponseEntity.ok(offerDto);
     }
 }

@@ -90,11 +90,11 @@ public class HappyPathScenarioTest extends BaseIntegrationTest {
         // step 9: User calls GET /offers?page=0&size=10
         // System returns 200 OK with offers 1000, 2000
 
-        // step 10: User calls GET /offers/9999
-        // System returns 404 NOT_FOUND (Offer with id 9999 was not found)
+        // step 10: User calls GET /offers/notExistingId
+        // System returns 404 NOT_FOUND (Offer with id notExistingId was not found)
 
         //given
-        String notExistingId = "9999";
+        String notExistingId = "notExistingId";
 
         //when
         ResultActions performGetNotExistingId = mockMvc.perform(get("/offers/" + notExistingId));
@@ -105,7 +105,7 @@ public class HappyPathScenarioTest extends BaseIntegrationTest {
                         """
                                 {
                                 "message": "Offer with id: notExistingId was not found",
-                                "status": "NOT_FOUND"
+                                "httpStatus": "NOT_FOUND"
                                 }
                                 """.trim()));
 
