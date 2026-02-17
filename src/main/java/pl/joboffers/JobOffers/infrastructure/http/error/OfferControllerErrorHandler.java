@@ -1,6 +1,7 @@
 package pl.joboffers.JobOffers.infrastructure.http.error;
 
 import lombok.extern.log4j.Log4j2;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -19,5 +20,14 @@ public class OfferControllerErrorHandler {
         String exceptionMessage = exception.getMessage();
         log.error(exceptionMessage);
         return new OfferControllerErrorResponse(exceptionMessage, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(DuplicateKeyException.class)
+    @ResponseBody
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public OfferPostErrorResponse handleDuplicateOffer(DuplicateKeyException exception) {
+        String exceptionMessage = exception.getMessage();
+        log.warn(exceptionMessage);
+        return new OfferPostErrorResponse(exceptionMessage, HttpStatus.CONFLICT);
     }
 }
