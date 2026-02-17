@@ -1,5 +1,6 @@
 package pl.joboffers.JobOffers.domain.offer;
 
+import org.springframework.dao.DuplicateKeyException;
 import pl.joboffers.JobOffers.domain.offer.dto.OfferDto;
 import pl.joboffers.JobOffers.domain.offer.dto.OfferRequestDto;
 import pl.joboffers.JobOffers.domain.offer.exception.OfferAlreadyExistsException;
@@ -40,7 +41,7 @@ public class OfferService {
 
     public Offer save(OfferRequestDto requestDto) {
         if (repository.existsByOfferUrl(requestDto.offerUrl())) {
-            throw new OfferAlreadyExistsException(String.format("Offer with url: %s already exists", requestDto.offerUrl()));
+            throw new DuplicateKeyException(String.format("Offer with url: %s already exists", requestDto.offerUrl()));
         }
 
         Offer offer = Offer.builder()
