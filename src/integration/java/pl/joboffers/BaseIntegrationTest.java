@@ -1,7 +1,9 @@
 package pl.joboffers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -43,5 +45,4 @@ public class BaseIntegrationTest {
         registry.add("offers.http.client.config.uri", () -> WIRE_MOCK_HOST);
         registry.add("offers.http.client.config.port", () -> wireMockServer.getPort());
     }
-
 }

@@ -30,6 +30,7 @@ public class DuplicateOfferUrlExceptionIntegrationTest extends BaseIntegrationTe
         //then
         performPostOffer.andExpect(status().isCreated());
 
+
         //step 2:
         //given
         //when

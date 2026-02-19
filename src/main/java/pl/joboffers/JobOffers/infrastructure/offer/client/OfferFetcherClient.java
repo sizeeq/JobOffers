@@ -5,6 +5,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.server.ResponseStatusException;
 import pl.joboffers.JobOffers.domain.offer.Offer;
@@ -34,7 +35,7 @@ public class OfferFetcherClient implements OfferFetcher {
             List<Offer> offers = makeGetRequest();
             log.info("Successfully fetched {} offers", offers.size());
             return OfferMapper.toDto(offers);
-        } catch (WebClientResponseException e) {
+        } catch (RestClientResponseException e) {
             log.error("External service responded with error: {} {}", e.getStatusCode(), e.getMessage());
         } catch (Exception e) {
             log.error("Failed to fetch job offers due to: {}", e.getMessage());
