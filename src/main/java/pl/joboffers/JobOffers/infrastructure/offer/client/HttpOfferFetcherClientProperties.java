@@ -16,6 +16,5 @@ public class HttpOfferFetcherClientProperties {
     private String path;
     private int connectionTimeout;
     private int readTimeout;
-    private int writeTimeout;
 }
 
