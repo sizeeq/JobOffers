@@ -1,15 +1,13 @@
 package pl.joboffers.feature;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.github.tomakehurst.wiremock.client.WireMock;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.ResultActions;
 import org.testcontainers.containers.MongoDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.utility.DockerImageName;
@@ -17,11 +15,9 @@ import pl.joboffers.BaseIntegrationTest;
 import pl.joboffers.JobOffers.domain.offer.OfferFacade;
 import pl.joboffers.JobOffers.domain.offer.dto.OfferDto;
 
-import java.time.Duration;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -43,13 +39,15 @@ public class HappyPathScenarioTest extends BaseIntegrationTest {
     }
 
     @Test
-    public void f() throws Exception {
+    @DisplayName("User should be able to view and add job offers while system fetched offers from external server")
+    public void user_should_be_able_to_view_and_add_job_offers_while_system_syncs_with_external_server() throws Exception {
 
         // Initial state:
         // - Database: no offers
         // - External server: no offers
         // - No registered users
-        // given & when & then
+
+        // given && when && then
         wireMockServer.stubFor(WireMock.get("/offers")
                 .willReturn(WireMock.aResponse()
                         .withStatus(HttpStatus.OK.value())
@@ -58,14 +56,15 @@ public class HappyPathScenarioTest extends BaseIntegrationTest {
                 )
         );
 
+
         // step 1: Scheduler runs for the first time and fetches offers → 0 offers
         // System adds 0 offers to the database
-        //given && when && then
-        await().atMost(Duration.ofSeconds(20))
-                .until(() -> {
-                    List<OfferDto> offerDtos = offerFacade.fetchAndSaveNewOffers();
-                    return offerDtos.isEmpty();
-                });
+
+        //given && when
+        List<OfferDto> offerDtos = offerFacade.fetchAndSaveNewOffers();
+
+        //then
+        assertThat(offerDtos.isEmpty());
 
 
         // step 2: User attempts to obtain a token via POST /token (username=someUser, password=somePassword)
@@ -86,19 +85,16 @@ public class HappyPathScenarioTest extends BaseIntegrationTest {
         //given
         String path = "/offers";
 
-        //when
-        ResultActions performResult = mockMvc.perform(get(path)
-                .contentType(MediaType.APPLICATION_JSON));
+        //when && then
+        mockMvc.perform(get(path)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.size()").value(0));
 
-        //then
-        MvcResult mvcResult = performResult.andExpect(status().isOk()).andReturn();
-        String json = mvcResult.getResponse().getContentAsString();
-        List<OfferDto> offerDtos = objectMapper.readValue(json, new TypeReference<>() {
-        });
-        assertThat(offerDtos).isEmpty();
 
         // step 7: Two new offers appear on the external server
 
+        //given && when && then
         wireMockServer.stubFor(WireMock.get("/offers")
                 .willReturn(WireMock.aResponse()
                         .withStatus(HttpStatus.OK.value())
@@ -107,17 +103,16 @@ public class HappyPathScenarioTest extends BaseIntegrationTest {
                 )
         );
 
+
         // step 8: Scheduler runs again and fetches 2 offers
         // System adds offers with id=1 and id=2 to the database
 
-        //given && when && then
-        await().atMost(Duration.ofSeconds(20))
-                .until(() ->
-                        {
-                            List<OfferDto> offerDtoWithTwoOffers = offerFacade.fetchAndSaveNewOffers();
-                            return !offerDtoWithTwoOffers.isEmpty();
-                        }
-                );
+        //given && when
+        List<OfferDto> offerDtoWithTwoOffers = offerFacade.fetchAndSaveNewOffers();
+
+        //then
+        assertThat(offerDtoWithTwoOffers).hasSize(2);
+
 
         // step 9: User calls GET /offers
         // System returns 200 OK with offers 1, 2
@@ -140,18 +135,12 @@ public class HappyPathScenarioTest extends BaseIntegrationTest {
         //given
         String notExistingId = "notExistingId";
 
-        //when
-        ResultActions performGetNotExistingId = mockMvc.perform(get("/offers/" + notExistingId));
+        //when && then
+        mockMvc.perform(get("/offers/" + notExistingId))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Offer with id: notExistingId was not found"))
+                .andExpect(jsonPath("$.httpStatus").value("NOT_FOUND"));
 
-        //then
-        performGetNotExistingId.andExpect(status().isNotFound())
-                .andExpect(content().json(
-                        """
-                                {
-                                "message": "Offer with id: notExistingId was not found",
-                                "httpStatus": "NOT_FOUND"
-                                }
-                                """.trim()));
 
         // step 11: User calls GET /offers/1
         // System returns 200 OK with details of offer 1
@@ -169,6 +158,7 @@ public class HappyPathScenarioTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.salary").value("7000–9000 PLN"))
                 .andExpect(jsonPath("$.offerUrl").value("https://example.com/offers/1"));
 
+
         // step 12: Two more offers appear on the external server
 
         wireMockServer.stubFor(WireMock.get("/offers")
@@ -179,16 +169,16 @@ public class HappyPathScenarioTest extends BaseIntegrationTest {
                 )
         );
 
+
         // step 13: Scheduler runs for the third time and fetches 2 new offers
         // System adds offers with id=3 and id=4 to the database
 
-        await().atMost(Duration.ofSeconds(20))
-                .until(() ->
-                        {
-                            List<OfferDto> offerDtoNewOffers = offerFacade.fetchAndSaveNewOffers();
-                            return !offerDtoNewOffers.isEmpty();
-                        }
-                );
+        //given && when
+        List<OfferDto> offerDtoTwoNewOffers = offerFacade.fetchAndSaveNewOffers();
+
+        //then
+        assertThat(offerDtoTwoNewOffers).hasSize(2);
+
 
         // step 14: User calls GET /offers
         // System returns 200 OK with offers 1, 2, 3, 4
@@ -203,6 +193,7 @@ public class HappyPathScenarioTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$.size()").value(4))
                 .andExpect(jsonPath("$[2].company").value("NextGen Software"))
                 .andExpect(jsonPath("$[3].company").value("CloudForge"));
+
 
         // step 15: User adds their own offer via POST /offers with JWT
         // System validates data, saves offer id=5000 (source=USER)
