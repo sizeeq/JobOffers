@@ -3,11 +3,11 @@ package pl.joboffers.JobOffers.domain.user;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.authentication.BadCredentialsException;
 import pl.joboffers.JobOffers.domain.user.dto.UserDto;
 import pl.joboffers.JobOffers.domain.user.dto.UserRegisterRequestDto;
-import pl.joboffers.JobOffers.domain.user.dto.UserRegisterResponseDto;
+import pl.joboffers.JobOffers.domain.user.dto.UserRegisterResultDto;
 import pl.joboffers.JobOffers.domain.user.exception.UserAlreadyExistsException;
-import pl.joboffers.JobOffers.domain.user.exception.UserNotFoundException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -35,7 +35,7 @@ class UserFacadeTest {
                 .build();
 
         //when
-        UserRegisterResponseDto response = userFacade.register(request);
+        UserRegisterResultDto response = userFacade.register(request);
 
         //then
         assertTrue(response.isCreated());
@@ -73,7 +73,7 @@ class UserFacadeTest {
                 .password("password123")
                 .build();
         repository.save(user);
-        
+
         //when
         UserDto dtoByUsername = userFacade.findByUsername(username);
 
@@ -85,6 +85,6 @@ class UserFacadeTest {
     @DisplayName("Should throw exception when user not found")
     void should_throw_exception_when_user_not_found() {
         //given when then
-        assertThrows(UserNotFoundException.class, () -> userFacade.findByUsername("notExistingUsername"));
+        assertThrows(BadCredentialsException.class, () -> userFacade.findByUsername("notExistingUsername"));
     }
 }

@@ -6,14 +6,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.server.ResponseStatusException;
 import pl.joboffers.JobOffers.domain.offer.Offer;
 import pl.joboffers.JobOffers.domain.offer.OfferFetcher;
 import pl.joboffers.JobOffers.domain.offer.OfferMapper;
 import pl.joboffers.JobOffers.domain.offer.dto.OfferDto;
 
-import java.util.Collections;
 import java.util.List;
 
 @Log4j2
@@ -35,13 +33,16 @@ public class OfferFetcherClient implements OfferFetcher {
             List<Offer> offers = makeGetRequest();
             log.info("Successfully fetched {} offers", offers.size());
             return OfferMapper.toDto(offers);
-        } catch (RestClientResponseException e) {
-            log.error("External service responded with error: {} {}", e.getStatusCode(), e.getMessage());
-        } catch (Exception e) {
-            log.error("Failed to fetch job offers due to: {}", e.getMessage());
+        } catch (ResponseStatusException exception) {
+            log.error("Error during offer fetch: {} {}", exception.getStatusCode(), exception.getReason());
+            throw exception;
+        } catch (RestClientResponseException exception) {
+            log.error("External service responded with error: {} {}", exception.getStatusCode(), exception.getMessage());
+            throw new ResponseStatusException(exception.getStatusCode(), exception.getMessage());
+        } catch (Exception exception) {
+            log.error("Unexpected error: {}", exception.getMessage());
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, exception.getMessage());
         }
-
-        return Collections.emptyList();
     }
 
     private List<Offer> makeGetRequest() {
@@ -50,11 +51,14 @@ public class OfferFetcherClient implements OfferFetcher {
                         .path(properties.getPath())
                         .build())
                 .retrieve()
+                .onStatus(httpStatusCode -> httpStatusCode == HttpStatus.NO_CONTENT, ((request, response) -> {
+                    throw new ResponseStatusException(HttpStatus.NO_CONTENT, "External service returned no content");
+                }))
                 .onStatus(HttpStatusCode::is4xxClientError, ((request, response) -> {
                     throw new ResponseStatusException(response.getStatusCode(), "Client error while fetching offers");
                 }))
                 .onStatus(HttpStatusCode::is5xxServerError, ((request, response) -> {
-                    throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Server error while fetching offers");
+                    throw new ResponseStatusException(response.getStatusCode(), "Server error while fetching offers");
                 }))
                 .body(new ParameterizedTypeReference<>() {
                 });

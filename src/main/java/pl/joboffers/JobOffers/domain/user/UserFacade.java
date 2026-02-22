@@ -1,11 +1,13 @@
 package pl.joboffers.JobOffers.domain.user;
 
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.stereotype.Component;
 import pl.joboffers.JobOffers.domain.user.dto.UserDto;
 import pl.joboffers.JobOffers.domain.user.dto.UserRegisterRequestDto;
-import pl.joboffers.JobOffers.domain.user.dto.UserRegisterResponseDto;
+import pl.joboffers.JobOffers.domain.user.dto.UserRegisterResultDto;
 import pl.joboffers.JobOffers.domain.user.exception.UserAlreadyExistsException;
-import pl.joboffers.JobOffers.domain.user.exception.UserNotFoundException;
 
+@Component
 public class UserFacade {
 
     private final UserRepository repository;
@@ -14,7 +16,7 @@ public class UserFacade {
         this.repository = repository;
     }
 
-    public UserRegisterResponseDto register(UserRegisterRequestDto requestDto) {
+    public UserRegisterResultDto register(UserRegisterRequestDto requestDto) {
         if (repository.existsByUsername(requestDto.username())) {
             throw new UserAlreadyExistsException("User is already registered");
         }
@@ -26,7 +28,8 @@ public class UserFacade {
 
         User savedUser = repository.save(user);
 
-        return UserRegisterResponseDto.builder()
+        return UserRegisterResultDto.builder()
+                .id(savedUser.id())
                 .username(savedUser.username())
                 .isCreated(true)
                 .build();
@@ -35,7 +38,6 @@ public class UserFacade {
     public UserDto findByUsername(String username) {
         return repository.findByUsername(username)
                 .map(UserMapper::toDto)
-                .orElseThrow(() -> new UserNotFoundException("User was not found"));
+                .orElseThrow(() -> new BadCredentialsException("User was not found"));
     }
-
 }

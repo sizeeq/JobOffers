@@ -1,4 +1,4 @@
-package pl.joboffers.JobOffers.infrastructure.http.error;
+package pl.joboffers.JobOffers.infrastructure.offer.error;
 
 import org.springframework.http.HttpStatus;
 
