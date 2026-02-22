@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: JobOffers
+  data:
+    mongodb:
+      uri: mongodb://admin:admin@localhost:27017/joboffers
+      auto-index-creation: true
+
+offers:
+  http:
+    client:
+      config:
+        uri: http://ec2-3-127-218-34.eu-central-1.compute.amazonaws.com
+        port: 5057
+        path: /offers
+        connectionTimeout: 5000
+        readTimeout: 5000
+        fixedDelay: PT3H
+  jwt:
+    config:
+      secret: secret temporary
+      issuer: Job Offers Service
+      expirationDays: 30

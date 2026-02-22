@@ -1,0 +1,68 @@
+SCENARIUSZ DZIAŁANIA APLIKACJI JOBOFFERS
+
+Stan początkowy:
+- Baza danych: brak ofert
+- Zewnętrzny serwer: brak ofert
+- Brak zarejestrowanych użytkowników
+
+1. Scheduler uruchamia się po raz pierwszy i pobiera oferty → 0 ofert
+   System dodaje 0 ofert do bazy
+
+2. Użytkownik próbuje pobrać token POST /token (username=someUser, password=somePassword)
+   System zwraca 401 UNAUTHORIZED
+
+3. Użytkownik wywołuje GET /offers bez tokena
+   System zwraca 401 UNAUTHORIZED
+
+4. Użytkownik rejestruje się POST /register (username=someUser, password=somePassword)
+   System tworzy użytkownika (rola USER) i zwraca 200 OK
+
+5. Użytkownik loguje się POST /token i otrzymuje JWT=AAAA.BBBB.CCC
+   System zwraca 200 OK
+
+6. Użytkownik wywołuje GET /offers z JWT
+   System zwraca 200 OK i pustą listę (0 ofert)
+
+7. Na zewnętrznym serwerze pojawiają się 2 nowe oferty
+
+8. Scheduler uruchamia się ponownie i pobiera 2 oferty
+   System dodaje do bazy oferty id=1000 i id=2000 (source=EXTERNAL)
+
+9. Użytkownik wywołuje GET /offers?page=0&size=10
+   System zwraca 200 OK z ofertami 1000, 2000
+
+10. Użytkownik wywołuje GET /offers/9999
+    System zwraca 404 NOT_FOUND (Offer with id 9999 not found)
+
+11. Użytkownik wywołuje GET /offers/1000
+    System zwraca 200 OK i szczegóły oferty 1000
+
+12. Na zewnętrznym serwerze pojawiają się kolejne 2 oferty
+
+13. Scheduler uruchamia się po raz trzeci i pobiera 2 nowe oferty
+    System dodaje do bazy oferty id=3000 i id=4000 (source=EXTERNAL)
+
+14. Użytkownik wywołuje GET /offers?page=0&size=10&keyword=java
+    System zwraca 200 OK i listę ofert 1000, 2000, 3000, 4000 (filtrowanie po słowie kluczowym)
+
+15. Użytkownik dodaje własną ofertę POST /offers z JWT
+    System waliduje dane, zapisuje ofertę id=5000 (source=USER)
+    System zwraca 201 CREATED z nagłówkiem Location: /offers/5000
+
+16. Użytkownik wywołuje GET /offers
+    System zwraca 200 OK i listę ofert 1000, 2000, 3000, 4000, 5000
+
+17. Użytkownik wywołuje GET /offers?mine=true
+    System zwraca 200 OK i tylko własne oferty (id=5000)
+
+18. Użytkownik próbuje DELETE /offers/1000
+    System zwraca 403 FORBIDDEN (brak uprawnień – tylko ADMIN może usuwać)
+
+19. Administrator loguje się POST /token (username=admin, password=adminPass)
+    System zwraca 200 OK i token DDD.EEE.FFF
+
+20. Administrator wykonuje DELETE /offers/1000 z JWT
+    System usuwa ofertę 1000 i zwraca 204 NO_CONTENT
+
+21. Użytkownik ponownie wywołuje GET /offers
+    System zwraca 200 OK i listę ofert 2000, 3000, 4000, 5000
