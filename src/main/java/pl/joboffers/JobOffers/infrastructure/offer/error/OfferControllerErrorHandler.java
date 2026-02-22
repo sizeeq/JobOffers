@@ -1,4 +1,4 @@
-package pl.joboffers.JobOffers.infrastructure.http.error;
+package pl.joboffers.JobOffers.infrastructure.offer.error;
 
 import lombok.extern.log4j.Log4j2;
 import org.springframework.dao.DuplicateKeyException;

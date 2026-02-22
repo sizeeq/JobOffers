@@ -1,4 +1,4 @@
-package pl.joboffers.JobOffers.infrastructure.http;
+package pl.joboffers.JobOffers.infrastructure.offer;
 
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;

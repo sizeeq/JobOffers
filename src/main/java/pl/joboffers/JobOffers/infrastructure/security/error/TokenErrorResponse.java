@@ -1,8 +1,8 @@
-package pl.joboffers.JobOffers.infrastructure.http.error;
+package pl.joboffers.JobOffers.infrastructure.security.error;
 
 import org.springframework.http.HttpStatus;
 
-public record OfferPostErrorResponse(
+public record TokenErrorResponse(
         String message,
         HttpStatus httpStatus
 ) {

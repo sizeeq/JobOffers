@@ -8,16 +8,19 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.web.servlet.MvcResult;
 import org.testcontainers.containers.MongoDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.utility.DockerImageName;
 import pl.joboffers.BaseIntegrationTest;
 import pl.joboffers.JobOffers.domain.offer.OfferFacade;
 import pl.joboffers.JobOffers.domain.offer.dto.OfferDto;
+import pl.joboffers.JobOffers.infrastructure.security.controller.dto.JwtResponseDto;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.matchesPattern;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -70,24 +73,84 @@ public class HappyPathScenarioTest extends BaseIntegrationTest {
         // step 2: User attempts to obtain a token via POST /token (username=someUser, password=somePassword)
         // System returns 401 UNAUTHORIZED
 
+        //given
+        String postTokenPath = "/token";
+        String postTokenContent = """
+                {
+                "username": "someUsername",
+                "password": "somePassword"
+                }
+                """.trim();
+
+        //when && then
+        mockMvc.perform(post(postTokenPath)
+                        .content(postTokenContent)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.message").value("Bad Credentials"))
+                .andExpect(jsonPath("$.httpStatus").value("UNAUTHORIZED"));
+
+
         // step 3: User calls GET /offers without a token
         // System returns 401 UNAUTHORIZED
 
-        // step 4: User registers via POST /register (username=someUser, password=somePassword)
-        // System creates the user (role: USER) and returns 200 OK
-
-        // step 5: User logs in via POST /token and receives JWT=AAAA.BBBB.CCC
-        // System returns 200 OK
-
-        // step 6: User calls GET /offers with JWT
-        // System returns 200 OK with an empty list (0 offers)
-
         //given
-        String path = "/offers";
+        String getOffersPath = "/offers";
 
         //when && then
-        mockMvc.perform(get(path)
+        mockMvc.perform(get(getOffersPath)
                         .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized());
+
+
+        // step 4: User registers via POST /register (username=someUsername, password=somePassword)
+        // System creates the user (role: USER) and returns 201 CREATED
+
+        //given
+        String postRegisterPath = "/register";
+        String postRegisterContent = """
+                {
+                "username": "someUsername",
+                "password": "somePassword"
+                }
+                """.trim();
+
+        //when && then
+        mockMvc.perform(post(postRegisterPath)
+                        .content(postRegisterContent)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isCreated())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.id").isNotEmpty())
+                .andExpect(jsonPath("$.username").value("someUsername"))
+                .andExpect(jsonPath("$.isCreated").value(true));
+
+
+        // step 5: User logs in via POST /token and receives token JWT=AAAA.BBBB.CCC
+        // System returns 200 OK
+
+        //given && when && then
+        MvcResult postTokenResult = mockMvc.perform(post(postTokenPath)
+                        .content(postTokenContent)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("someUsername"))
+                .andExpect(jsonPath("$.token", matchesPattern("^[A-Za-z0-9-_=]+\\.[A-Za-z0-9-_=]+\\.[A-Za-z0-9-_=]+$")))
+                .andReturn();
+
+        String contentAsString = postTokenResult.getResponse().getContentAsString();
+        JwtResponseDto jwtResponseDto = objectMapper.readValue(contentAsString, JwtResponseDto.class);
+        String jwtToken = jwtResponseDto.token();
+
+
+        // step 6: User calls GET /offers with JWT token
+        // System returns 200 OK with an empty list (0 offers)
+
+        //given && when && then
+        mockMvc.perform(get(getOffersPath)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + jwtToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.size()").value(0));
 
@@ -117,11 +180,9 @@ public class HappyPathScenarioTest extends BaseIntegrationTest {
         // step 9: User calls GET /offers
         // System returns 200 OK with offers 1, 2
 
-        //given
-        String pathGetTwoOffers = "/offers";
-
-        //when && then
-        mockMvc.perform(get(pathGetTwoOffers))
+        //given && when && then
+        mockMvc.perform(get(getOffersPath)
+                        .header("Authorization", "Bearer " + jwtToken))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.size()").value(2))
@@ -136,7 +197,8 @@ public class HappyPathScenarioTest extends BaseIntegrationTest {
         String notExistingId = "notExistingId";
 
         //when && then
-        mockMvc.perform(get("/offers/" + notExistingId))
+        mockMvc.perform(get(getOffersPath + "/" + notExistingId)
+                        .header("Authorization", "Bearer " + jwtToken))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("Offer with id: notExistingId was not found"))
                 .andExpect(jsonPath("$.httpStatus").value("NOT_FOUND"));
@@ -145,11 +207,9 @@ public class HappyPathScenarioTest extends BaseIntegrationTest {
         // step 11: User calls GET /offers/1
         // System returns 200 OK with details of offer 1
 
-        //given
-        String pathGetOffer = "/offers/1";
-
-        //when && then
-        mockMvc.perform(get(pathGetOffer))
+        //given && when && then
+        mockMvc.perform(get(getOffersPath + "/1")
+                        .header("Authorization", "Bearer " + jwtToken))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.id").value(1))
@@ -183,11 +243,9 @@ public class HappyPathScenarioTest extends BaseIntegrationTest {
         // step 14: User calls GET /offers
         // System returns 200 OK with offers 1, 2, 3, 4
 
-        //given
-        String pathGetFourOffers = "/offers";
-
-        //when && then
-        mockMvc.perform(get(pathGetFourOffers))
+        //given && when && then
+        mockMvc.perform(get(getOffersPath)
+                        .header("Authorization", "Bearer " + jwtToken))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.size()").value(4))
@@ -214,6 +272,7 @@ public class HappyPathScenarioTest extends BaseIntegrationTest {
                         post("/offers")
                                 .content(postOfferContent)
                                 .contentType(MediaType.APPLICATION_JSON)
+                                .header("Authorization", "Bearer " + jwtToken)
                 )
                 .andExpect(status().isCreated())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
@@ -227,11 +286,9 @@ public class HappyPathScenarioTest extends BaseIntegrationTest {
         // step 16: User calls GET /offers
         // System returns 200 OK with offers 1, 2, 3, 4, generatedId*
 
-        //given
-        String pathGetFiveOffers = "/offers";
-
-        //when && then
-        mockMvc.perform(get(pathGetFiveOffers))
+        //given && when && then
+        mockMvc.perform(get(getOffersPath)
+                        .header("Authorization", "Bearer " + jwtToken))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.size()").value(5))
