@@ -2,6 +2,7 @@ package pl.joboffers.controller.error;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.ResultActions;
 import pl.joboffers.BaseIntegrationTest;
 
@@ -11,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class DuplicateOfferUrlExceptionIntegrationTest extends BaseIntegrationTest {
 
     @Test
+    @WithMockUser
     public void should_return_conflict_status_when_user_posts_offer_with_duplicated_offer_url() throws Exception {
         //step 1:
         //given

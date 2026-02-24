@@ -15,8 +15,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -192,5 +191,40 @@ class OfferFacadeTest {
 
         //then
         assertTrue(result.isEmpty());
+    }
+
+    @Test
+    @DisplayName("Should throw offerNotFoundException when trying to delete not existing offer")
+    void should_throw_offer_not_found_exception_when_trying_to_delete_not_existing_offer() {
+        //given
+        String notExistingId = "notExistingId";
+
+        //when
+        //then
+        assertThrows(OfferNotFoundException.class, () -> offerFacade.deleteOfferById(notExistingId));
+    }
+
+    @Test
+    @DisplayName("Should delete offer from database")
+    void should_delete_offer_from_database() {
+        //given
+        offerRepository.saveAll(sampleOffers);
+        assertAll(() -> {
+                    assertThat(offerRepository.findAll()).hasSize(2);
+                    assertThat(offerRepository.existsById("1000")).isTrue();
+                    assertThat(offerRepository.existsById("2000")).isTrue();
+                }
+        );
+
+        //when
+        offerFacade.deleteOfferById("1000");
+
+        //then
+        assertAll(() -> {
+                    assertThat(offerRepository.findAll()).hasSize(1);
+                    assertThat(offerRepository.existsById("1000")).isFalse();
+                    assertThat(offerRepository.existsById("2000")).isTrue();
+                }
+        );
     }
 }

@@ -3,7 +3,11 @@ package pl.joboffers.JobOffers.domain.user;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import pl.joboffers.JobOffers.domain.user.dto.UserDto;
 import pl.joboffers.JobOffers.domain.user.dto.UserRegisterRequestDto;
 import pl.joboffers.JobOffers.domain.user.dto.UserRegisterResultDto;
@@ -13,15 +17,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith(MockitoExtension.class)
 class UserFacadeTest {
 
     private UserRepository repository;
     private UserFacade userFacade;
 
+    @Mock
+    private PasswordEncoder passwordEncoder;
+
     @BeforeEach
     void setUp() {
         repository = new InMemoryUserRepository();
-        userFacade = new UserFacade(repository);
+        userFacade = new UserFacade(repository, passwordEncoder);
     }
 
     @Test

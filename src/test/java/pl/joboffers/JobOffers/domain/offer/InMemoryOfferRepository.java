@@ -6,73 +6,37 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.repository.query.FluentQuery;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import java.util.stream.StreamSupport;
 
-public class InMemoryOfferRepository implements OfferRepository{
+public class InMemoryOfferRepository implements OfferRepository {
 
     private final Map<String, Offer> offers = new ConcurrentHashMap<>();
 
     @Override
     public Offer save(Offer offer) {
-        offers.put(offer.id(), offer);
-        return offer;
+        String id = offer.id() == null ? UUID.randomUUID().toString() : offer.id();
+
+        Offer savedOffer = new Offer(
+                id,
+                offer.company(),
+                offer.position(),
+                offer.salary(),
+                offer.offerUrl()
+        );
+
+        offers.put(id, savedOffer);
+        return savedOffer;
     }
 
     @Override
     public <S extends Offer> List<S> saveAll(Iterable<S> entities) {
-        List<S> saved = new ArrayList<>();
-
-        for (S entity : entities) {
-            offers.put(entity.id(), entity);
-            saved.add(entity);
-        }
-
-        return saved;
-    }
-
-    @Override
-    public List<Offer> findAll() {
-        return new ArrayList<>(offers.values());
-    }
-
-    @Override
-    public List<Offer> findAllById(Iterable<String> strings) {
-        return List.of();
-    }
-
-    @Override
-    public long count() {
-        return 0;
-    }
-
-    @Override
-    public void deleteById(String s) {
-
-    }
-
-    @Override
-    public void delete(Offer entity) {
-
-    }
-
-    @Override
-    public void deleteAllById(Iterable<? extends String> strings) {
-
-    }
-
-    @Override
-    public void deleteAll(Iterable<? extends Offer> entities) {
-
-    }
-
-    @Override
-    public void deleteAll() {
-
+        return StreamSupport.stream(entities.spliterator(), false)
+                .map(this::save)
+                .map(entity -> (S) entity)
+                .toList();
     }
 
     @Override
@@ -81,8 +45,51 @@ public class InMemoryOfferRepository implements OfferRepository{
     }
 
     @Override
-    public boolean existsById(String s) {
-        return false;
+    public boolean existsById(String id) {
+        return offers.containsKey(id);
+    }
+
+    @Override
+    public List<Offer> findAll() {
+        return new ArrayList<>(offers.values());
+    }
+
+    @Override
+    public List<Offer> findAllById(Iterable<String> ids) {
+        return StreamSupport.stream(ids.spliterator(), false)
+                .map(offers::get)
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    @Override
+    public long count() {
+        return offers.size();
+    }
+
+    @Override
+    public void deleteById(String id) {
+        offers.remove(id);
+    }
+
+    @Override
+    public void delete(Offer entity) {
+        offers.remove(entity.id());
+    }
+
+    @Override
+    public void deleteAllById(Iterable<? extends String> ids) {
+        ids.forEach(offers::remove);
+    }
+
+    @Override
+    public void deleteAll(Iterable<? extends Offer> entities) {
+        entities.forEach(entity -> offers.remove(entity.id()));
+    }
+
+    @Override
+    public void deleteAll() {
+        offers.clear();
     }
 
     @Override
@@ -93,22 +100,30 @@ public class InMemoryOfferRepository implements OfferRepository{
 
     @Override
     public <S extends Offer> S insert(S entity) {
-        return null;
+        return (S) save(entity);
     }
 
     @Override
     public <S extends Offer> List<S> insert(Iterable<S> entities) {
-        return List.of();
+        return saveAll(entities);
     }
 
     @Override
     public <S extends Offer> Optional<S> findOne(Example<S> example) {
-        return Optional.empty();
+        throw new UnsupportedOperationException("Example queries are not supported in memory");
     }
 
     @Override
     public <S extends Offer> List<S> findAll(Example<S> example) {
-        return List.of();
+        throw new UnsupportedOperationException("Example queries are not supported in memory");
+    }
+
+    @Override
+    public Page<Offer> findAll(Pageable pageable) {
+        List<Offer> allOffers = findAll();
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), allOffers.size());
+        return new org.springframework.data.domain.PageImpl<>(allOffers.subList(start, end), pageable, allOffers.size());
     }
 
     @Override
@@ -139,10 +154,5 @@ public class InMemoryOfferRepository implements OfferRepository{
     @Override
     public List<Offer> findAll(Sort sort) {
         return List.of();
-    }
-
-    @Override
-    public Page<Offer> findAll(Pageable pageable) {
-        return null;
     }
 }

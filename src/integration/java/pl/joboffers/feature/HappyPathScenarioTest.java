@@ -31,9 +31,6 @@ public class HappyPathScenarioTest extends BaseIntegrationTest {
     @Autowired
     OfferFacade offerFacade;
 
-    @Container
-    public static final MongoDBContainer mongoDBContainer = new MongoDBContainer(DockerImageName.parse("mongo:4.2"));
-
     @DynamicPropertySource
     public static void propertyOverride(DynamicPropertyRegistry registry) {
         registry.add("spring.data.mongodb.uri", mongoDBContainer::getReplicaSetUrl);
@@ -93,7 +90,7 @@ public class HappyPathScenarioTest extends BaseIntegrationTest {
 
 
         // step 3: User calls GET /offers without a token
-        // System returns 401 UNAUTHORIZED
+        // System returns 403 FORBIDDEN
 
         //given
         String getOffersPath = "/offers";
@@ -101,7 +98,7 @@ public class HappyPathScenarioTest extends BaseIntegrationTest {
         //when && then
         mockMvc.perform(get(getOffersPath)
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isForbidden());
 
 
         // step 4: User registers via POST /register (username=someUsername, password=somePassword)

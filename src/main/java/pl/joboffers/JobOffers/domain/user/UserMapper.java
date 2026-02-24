@@ -9,6 +9,7 @@ public class UserMapper {
                 .id(user.id())
                 .username(user.username())
                 .password(user.password())
+                .roles(user.roles())
                 .build();
     }
 }
