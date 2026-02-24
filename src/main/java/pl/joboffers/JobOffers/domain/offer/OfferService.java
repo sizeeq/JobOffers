@@ -1,14 +1,18 @@
 package pl.joboffers.JobOffers.domain.offer;
 
-import org.springframework.dao.DuplicateKeyException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.transaction.annotation.Transactional;
 import pl.joboffers.JobOffers.domain.offer.dto.OfferDto;
 import pl.joboffers.JobOffers.domain.offer.dto.OfferRequestDto;
+import pl.joboffers.JobOffers.domain.offer.dto.OfferUpdateRequestDto;
 import pl.joboffers.JobOffers.domain.offer.exception.OfferAlreadyExistsException;
 import pl.joboffers.JobOffers.domain.offer.exception.OfferNotFoundException;
 
 import java.util.List;
 import java.util.UUID;
 
+@Transactional
 public class OfferService {
 
     private final OfferRepository repository;
@@ -34,6 +38,10 @@ public class OfferService {
         return repository.findAll();
     }
 
+    public Page<Offer> findAllOffers(Pageable pageable) {
+        return repository.findAll(pageable);
+    }
+
     public Offer findById(String id) {
         return repository.findById(id)
                 .orElseThrow(() -> new OfferNotFoundException(String.format("Offer with id: %s was not found", id)));
@@ -41,7 +49,7 @@ public class OfferService {
 
     public Offer save(OfferRequestDto requestDto) {
         if (repository.existsByOfferUrl(requestDto.offerUrl())) {
-            throw new DuplicateKeyException(String.format("Offer with url: %s already exists", requestDto.offerUrl()));
+            throw new OfferAlreadyExistsException(String.format("Offer with url: %s already exists", requestDto.offerUrl()));
         }
 
         Offer offer = Offer.builder()
@@ -62,5 +70,23 @@ public class OfferService {
                 .toList();
 
         return repository.saveAll(filteredOffers);
+    }
+
+    public void deleteOfferById(String id) {
+        if (!repository.existsById(id)) {
+            throw new OfferNotFoundException(String.format("Offer with id: %s was not found", id));
+        }
+
+        repository.deleteById(id);
+    }
+
+    public OfferDto updateOffer(String id, OfferUpdateRequestDto updateRequestDto) {
+        Offer existingOffer = repository.findById(id)
+                .orElseThrow(() -> new OfferNotFoundException(String.format("Offer with id: %s was not found", id)));
+
+        Offer updatedOffer = OfferMapper.mapUpdateDtoToEntity(existingOffer, updateRequestDto);
+        Offer savedOffer = repository.save(updatedOffer);
+
+        return OfferMapper.toDto(savedOffer);
     }
 }

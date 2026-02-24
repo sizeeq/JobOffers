@@ -2,6 +2,7 @@ package pl.joboffers.apivalidationerror;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import pl.joboffers.BaseIntegrationTest;
 
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -11,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class ApiValidationFailedIntegrationTest extends BaseIntegrationTest {
 
     @Test
+    @WithMockUser
     public void should_return_bad_request_and_validation_messages_when_client_sends_empty_request_input_data() throws Exception {
         //given
         String postOfferContent = """
@@ -40,6 +42,7 @@ public class ApiValidationFailedIntegrationTest extends BaseIntegrationTest {
     }
 
     @Test
+    @WithMockUser
     public void should_return_bad_request_and_validation_messages_when_client_sends_no_request_input_data() throws Exception {
         //given
         String postOfferContent = """

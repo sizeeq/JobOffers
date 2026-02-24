@@ -1,9 +1,11 @@
 package pl.joboffers.JobOffers.infrastructure.security.controller;
 
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import pl.joboffers.JobOffers.domain.user.UserFacade;
@@ -13,24 +15,22 @@ import pl.joboffers.JobOffers.domain.user.dto.UserRegisterResultDto;
 import java.net.URI;
 
 @RestController
+@RequestMapping("/register")
 public class RegisterController {
 
     private final UserFacade userFacade;
-    private final PasswordEncoder passwordEncoder;
 
-    public RegisterController(UserFacade userFacade, PasswordEncoder passwordEncoder) {
+
+    public RegisterController(UserFacade userFacade) {
         this.userFacade = userFacade;
-        this.passwordEncoder = passwordEncoder;
     }
 
-    @PostMapping("/register")
-    public ResponseEntity<UserRegisterResultDto> registerUser(@RequestBody UserRegisterRequestDto requestDto) {
-        String encodedPassword = passwordEncoder.encode(requestDto.password());
-
+    @PostMapping()
+    public ResponseEntity<UserRegisterResultDto> registerUser(@Valid @RequestBody UserRegisterRequestDto requestDto) {
         UserRegisterResultDto registerResultDto = userFacade.register(
                 new UserRegisterRequestDto(
                         requestDto.username(),
-                        encodedPassword
+                        requestDto.password()
                 )
         );
 

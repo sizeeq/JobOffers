@@ -1,13 +1,13 @@
 package pl.joboffers.JobOffers.infrastructure.security;
 
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import pl.joboffers.JobOffers.domain.user.UserFacade;
 import pl.joboffers.JobOffers.domain.user.dto.UserDto;
 
-import java.util.Collections;
+import java.util.List;
 
 public class LoginUserDetailsService implements UserDetailsService {
 
@@ -23,11 +23,15 @@ public class LoginUserDetailsService implements UserDetailsService {
         return getUser(userDto);
     }
 
-    private User getUser(UserDto userDto) {
-        return new User(
-                userDto.username(),
-                userDto.password(),
-                Collections.emptyList()
-        );
+    private UserDetails getUser(UserDto userDto) {
+        List<SimpleGrantedAuthority> authorities = userDto.roles().stream()
+                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.name()))
+                .toList();
+
+        return org.springframework.security.core.userdetails.User.builder()
+                .username(userDto.username())
+                .password(userDto.password())
+                .authorities(authorities)
+                .build();
     }
 }
