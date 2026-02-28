@@ -1,4 +1,4 @@
-package pl.joboffers.cahce.redis;
+package pl.joboffers.cache.redis;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
