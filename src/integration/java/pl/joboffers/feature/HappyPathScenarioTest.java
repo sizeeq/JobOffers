@@ -287,21 +287,5 @@ public class HappyPathScenarioTest extends BaseIntegrationTest {
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.size()").value(5))
                 .andExpect(jsonPath("$[4].company").value("Nikmet"));
-
-
-        // step 17: User calls GET /offers?mine=true
-        // System returns 200 OK with only their own offers (id=5000)
-
-        // step 18: User attempts DELETE /offers/1000
-        // System returns 403 FORBIDDEN (only ADMIN can delete)
-
-        // step 19: Administrator logs in via POST /token (username=admin, password=adminPass)
-        // System returns 200 OK and token DDD.EEE.FFF
-
-        // step 20: Administrator executes DELETE /offers/1000 with JWT
-        // System deletes offer 1000 and returns 204 NO_CONTENT
-
-        // step 21: User calls GET /offers again
-        // System returns 200 OK with offers 2000, 3000, 4000, 5000
     }
 }
