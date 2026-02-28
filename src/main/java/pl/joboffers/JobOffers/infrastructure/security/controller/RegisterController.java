@@ -20,19 +20,13 @@ public class RegisterController {
 
     private final UserFacade userFacade;
 
-
     public RegisterController(UserFacade userFacade) {
         this.userFacade = userFacade;
     }
 
     @PostMapping()
     public ResponseEntity<UserRegisterResultDto> registerUser(@Valid @RequestBody UserRegisterRequestDto requestDto) {
-        UserRegisterResultDto registerResultDto = userFacade.register(
-                new UserRegisterRequestDto(
-                        requestDto.username(),
-                        requestDto.password()
-                )
-        );
+        UserRegisterResultDto registerResultDto = userFacade.register(requestDto);
 
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")

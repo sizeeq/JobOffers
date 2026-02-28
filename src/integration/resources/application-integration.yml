@@ -3,3 +3,9 @@ offers:
     client:
       config:
         fixedDelay: PT1s
+
+spring:
+  cache:
+    type: none
+    redis:
+      time-to-live: PT10S
