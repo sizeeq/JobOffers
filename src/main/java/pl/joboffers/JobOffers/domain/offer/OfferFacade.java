@@ -1,5 +1,6 @@
 package pl.joboffers.JobOffers.domain.offer;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
@@ -35,6 +36,7 @@ public class OfferFacade {
         return OfferMapper.toDto(offerById);
     }
 
+    @Cacheable("jobOffers")
     public Page<OfferDto> findAllOffers(Pageable pageable) {
         return offerService.findAllOffers(pageable)
                 .map(OfferMapper::toDto);

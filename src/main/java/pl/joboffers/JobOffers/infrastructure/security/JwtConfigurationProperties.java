@@ -13,5 +13,5 @@ public class JwtConfigurationProperties {
 
     String secret;
     String issuer;
-    Long expirationDays;
+    int expirationDays;
 }
